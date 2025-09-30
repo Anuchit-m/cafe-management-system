@@ -1,0 +1,36 @@
+<div class="auth-container">
+    <h2 class="text-center mb-4">สมัครสมาชิก</h2>
+    
+    <% if (locals.error) { %>
+        <div class="alert alert-danger" role="alert">
+            <%= error %>
+        </div>
+    <% } %>
+
+    <form action="/auth/register" method="POST">
+        <div class="mb-3">
+            <label for="username" class="form-label">ชื่อผู้ใช้</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">รหัสผ่าน</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <div class="mb-3">
+            <label for="confirmPassword" class="form-label">ยืนยันรหัสผ่าน</label>
+            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+        </div>
+        <div class="mb-3">
+            <label for="fullName" class="form-label">ชื่อ-นามสกุล</label>
+            <input type="text" class="form-control" id="fullName" name="fullName" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">อีเมล</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">สมัครสมาชิก</button>
+        <div class="text-center mt-3">
+            <a href="/" class="text-decoration-none">มีบัญชีอยู่แล้ว? เข้าสู่ระบบ</a>
+        </div>
+    </form>
+</div> 

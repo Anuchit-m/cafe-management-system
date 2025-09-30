@@ -1,0 +1,251 @@
+<div class="container mt-4">
+  <h2>จัดการเมนู</h2>
+  
+  <!-- Add Menu Button -->
+  <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addMenuModal">
+    เพิ่มเมนูใหม่
+  </button>
+
+  <!-- Menu List -->
+  <div class="row">
+    <% if (locals.menus && menus.length > 0) { %>
+      <% menus.forEach(menu => { %>
+        <div class="col-md-4 mb-4">
+          <div class="card">
+            <% if (menu.image) { %>
+              <img src="<%= menu.image %>" class="card-img-top" alt="<%= menu.name %>">
+            <% } %>
+            <div class="card-body">
+              <h5 class="card-title"><%= menu.name %></h5>
+              <p class="card-text">
+                ประเภท: <%= menu.category %><br>
+                ราคา: <%= menu.price %> บาท<br>
+                สถานะ: <%= menu.status === 'available' ? 'พร้อมขาย' : 'ไม่พร้อมขาย' %>
+              </p>
+              <div class="btn-group">
+                <button class="btn btn-warning btn-sm edit-menu" 
+                        data-id="<%= menu._id %>"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#editMenuModal">
+                  แก้ไข
+                </button>
+                <button class="btn btn-danger btn-sm delete-menu" 
+                        data-id="<%= menu._id %>">
+                  ลบ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12">
+        <p class="text-center">ไม่พบรายการเมนู</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Add Menu Modal -->
+  <div class="modal fade" id="addMenuModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">เพิ่มเมนูใหม่</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/menu" method="POST" enctype="multipart/form-data">
+          <div class="modal-body">
+            <% if (locals.error) { %>
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= error %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            <% } %>
+            <div class="mb-3">
+              <label class="form-label">ชื่อเมนู</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ประเภท</label>
+              <select class="form-select" name="category" required>
+                <option value="coffee">กาแฟ</option>
+                <option value="tea">ชา</option>
+                <option value="bakery">เบเกอรี่</option>
+                <option value="snack">ของว่าง</option>
+                <option value="drink">เครื่องดื่ม</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ราคา</label>
+              <input type="number" class="form-control" name="price" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">รายละเอียด</label>
+              <textarea class="form-control" name="description"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">รูปภาพ</label>
+              <input type="file" class="form-control" name="image">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Menu Modal -->
+  <div class="modal fade" id="editMenuModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">แก้ไขเมนู</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="editMenuForm" method="POST" enctype="multipart/form-data">
+          <div class="modal-body">
+            <input type="hidden" id="editMenuId" name="id">
+            <div class="mb-3">
+              <label class="form-label">ชื่อเมนู</label>
+              <input type="text" class="form-control" id="editMenuName" name="name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ประเภท</label>
+              <select class="form-select" id="editMenuCategory" name="category" required>
+                <option value="coffee">กาแฟ</option>
+                <option value="tea">ชา</option>
+                <option value="bakery">เบเกอรี่</option>
+                <option value="snack">ของว่าง</option>
+                <option value="drink">เครื่องดื่ม</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ราคา</label>
+              <input type="number" class="form-control" id="editMenuPrice" name="price" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">รายละเอียด</label>
+              <textarea class="form-control" id="editMenuDescription" name="description"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">รูปภาพ</label>
+              <input type="file" class="form-control" name="image" accept="image/*">
+              <div id="currentImage" class="mt-2"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">สถานะ</label>
+              <select class="form-select" id="editMenuStatus" name="status">
+                <option value="available">พร้อมขาย</option>
+                <option value="unavailable">ไม่พร้อมขาย</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (locals.error) { %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = new bootstrap.Modal(document.getElementById('addMenuModal'));
+    modal.show();
+  });
+</script>
+<% } %>
+
+<script>
+// Add JavaScript for delete functionality
+document.querySelectorAll('.delete-menu').forEach(button => {
+  button.addEventListener('click', async (e) => {
+    if (confirm('คุณแน่ใจหรือไม่ที่จะลบเมนูนี้?')) {
+      const id = e.target.dataset.id;
+      try {
+        const response = await fetch(`/menu/${id}`, {
+          method: 'DELETE'
+        });
+        if (response.ok) {
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+  });
+});
+
+// เพิ่ม Script สำหรับจัดการการแก้ไข
+document.querySelectorAll('.edit-menu').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        const menuCard = e.target.closest('.card');
+        
+        // ดึงข้อมูลจาก card และใส่ในฟอร์มแก้ไข
+        document.getElementById('editMenuId').value = id;
+        document.getElementById('editMenuName').value = menuCard.querySelector('.card-title').textContent;
+        
+        // ดึงข้อมูลประเภท
+        const categoryText = menuCard.querySelector('.card-text').textContent;
+        const category = categoryText.split('ประเภท: ')[1].split('\n')[0].trim();
+        document.getElementById('editMenuCategory').value = category.toLowerCase();
+        
+        // ดึงข้อมูลราคา
+        const priceText = menuCard.querySelector('.card-text').textContent;
+        const price = priceText.split('ราคา: ')[1].split(' บาท')[0].trim();
+        document.getElementById('editMenuPrice').value = price;
+        
+        // ดึงข้อมูลสถานะ
+        const statusText = menuCard.querySelector('.card-text').textContent;
+        const status = statusText.includes('พร้อมขาย') ? 'available' : 'unavailable';
+        document.getElementById('editMenuStatus').value = status;
+
+        // ดึงรูปภาพปัจจุบัน (ถ้ามี)
+        const imgElement = menuCard.querySelector('img');
+        if (imgElement) {
+            document.getElementById('currentImage').innerHTML = `
+                <img src="${imgElement.src}" alt="Current Image" style="max-width: 100px; max-height: 100px;">
+                <p class="text-muted">รูปภาพปัจจุบัน</p>
+            `;
+        } else {
+            document.getElementById('currentImage').innerHTML = '<p class="text-muted">ไม่มีรูปภาพ</p>';
+        }
+
+        // เปลี่ยน form action
+        document.getElementById('editMenuForm').action = `/menu/${id}?_method=PUT`;
+    });
+});
+
+// จัดการการส่ง form แก้ไข
+document.getElementById('editMenuForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const id = document.getElementById('editMenuId').value;
+    
+    try {
+        const response = await fetch(`/menu/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            window.location.reload();
+        } else {
+            throw new Error(data.message || 'เกิดข้อผิดพลาดในการแก้ไขเมนู');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'เกิดข้อผิดพลาดในการแก้ไขเมนู');
+    }
+});
+</script> 

@@ -1,0 +1,66 @@
+<div class="container mt-4">
+    <h2 class="mb-4">แดชบอร์ด</h2>
+    
+    <div class="row">
+        <!-- Stats Cards -->
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>ยอดขายวันนี้</h5>
+                <div class="stats-number">฿<%= locals.todaySales || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>ออเดอร์วันนี้</h5>
+                <div class="stats-number"><%= locals.todayOrders || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>เมนูทั้งหมด</h5>
+                <div class="stats-number"><%= locals.totalMenus || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>ออเดอร์ที่รอ</h5>
+                <div class="stats-number"><%= locals.pendingOrders || 0 %></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="table-container mt-4">
+        <h4>ออเดอร์ล่าสุด</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>เลขออเดอร์</th>
+                    <th>เวลา</th>
+                    <th>รายการ</th>
+                    <th>ราคารวม</th>
+                    <th>สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (locals.recentOrders && recentOrders.length > 0) { %>
+                    <% recentOrders.forEach(order => { %>
+                        <tr>
+                            <td><%= order.orderNumber %></td>
+                            <td><%= new Date(order.createdAt).toLocaleString() %></td>
+                            <td><%= order.items.length %> รายการ</td>
+                            <td>฿<%= order.totalAmount %></td>
+                            <td><span class="badge bg-<%= order.status === 'completed' ? 'success' : 'warning' %>">
+                                <%= order.status %>
+                            </span></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="5" class="text-center">ไม่มีออเดอร์ล่าสุด</td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div> 

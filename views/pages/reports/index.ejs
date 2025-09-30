@@ -1,0 +1,115 @@
+<div class="container mt-4">
+    <h2 class="mb-4">รายงาน</h2>
+
+    <!-- Date Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">วันที่เริ่มต้น</label>
+                    <input type="date" class="form-control" name="startDate" value="<%= startDate %>">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">วันที่สิ้นสุด</label>
+                    <input type="date" class="form-control" name="endDate" value="<%= endDate %>">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">ค้นหา</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">จำนวนออเดอร์</h5>
+                    <h3 class="card-text"><%= summary.totalOrders %> ออเดอร์</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">ยอดขายรวม</h5>
+                    <h3 class="card-text">฿<%= summary.totalSales.toLocaleString() %></h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">ยอดเฉลี่ยต่อออเดอร์</h5>
+                    <h3 class="card-text">฿<%= summary.averageOrderValue.toFixed(2) %></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Menu Items -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">เมนูขายดี</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>เมนู</th>
+                                    <th class="text-end">จำนวน</th>
+                                    <th class="text-end">ยอดขาย</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% topMenus.forEach(menu => { %>
+                                    <tr>
+                                        <td><%= menu.name %></td>
+                                        <td class="text-end"><%= menu.quantity %></td>
+                                        <td class="text-end">฿<%= menu.revenue.toLocaleString() %></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">รายการออเดอร์</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>เลขออเดอร์</th>
+                                    <th>วันที่</th>
+                                    <th class="text-end">จำนวนรายการ</th>
+                                    <th class="text-end">ยอดรวม</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% orders.forEach(order => { %>
+                                    <tr>
+                                        <td><%= order.orderNumber %></td>
+                                        <td><%= new Date(order.createdAt).toLocaleString() %></td>
+                                        <td class="text-end"><%= order.items.length %></td>
+                                        <td class="text-end">฿<%= order.totalAmount.toLocaleString() %></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

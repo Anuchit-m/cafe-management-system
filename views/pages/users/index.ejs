@@ -1,0 +1,252 @@
+<div class="container mt-4">
+    <h2>จัดการพนักงาน</h2>
+
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        เพิ่มพนักงานใหม่
+    </button>
+
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ชื่อผู้ใช้</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>อีเมล</th>
+                    <th>ตำแหน่ง</th>
+                    <th>วันที่สร้าง</th>
+                    <th>การจัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (users && users.length > 0) { %>
+                    <% users.forEach(user => { %>
+                        <tr>
+                            <td><%= user.username %></td>
+                            <td><%= user.fullName || '-' %></td>
+                            <td><%= user.email || '-' %></td>
+                            <td><%= user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน' %></td>
+                            <td><%= new Date(user.createdAt).toLocaleDateString('th-TH') %></td>
+                            <td>
+                                <button class="btn btn-warning btn-sm edit-user" 
+                                        data-id="<%= user._id %>"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editUserModal">
+                                    แก้ไข
+                                </button>
+                                <button class="btn btn-danger btn-sm delete-user" 
+                                        data-id="<%= user._id %>">
+                                    ลบ
+                                </button>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="6" class="text-center">ไม่พบข้อมูลพนักงาน</td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">เพิ่มพนักงานใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/users" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อผู้ใช้</label>
+                            <input type="text" class="form-control" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">รหัสผ่าน</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อ-นามสกุล</label>
+                            <input type="text" class="form-control" name="fullName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">อีเมล</label>
+                            <input type="email" class="form-control" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ตำแหน่ง</label>
+                            <select class="form-select" name="role">
+                                <option value="staff">พนักงาน</option>
+                                <option value="admin">ผู้ดูแลระบบ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">แก้ไขข้อมูลพนักงาน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editUserForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อ-นามสกุล</label>
+                            <input type="text" class="form-control" id="editFullName" name="fullName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">อีเมล</label>
+                            <input type="email" class="form-control" id="editEmail" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ตำแหน่ง</label>
+                            <select class="form-select" id="editRole" name="role">
+                                <option value="admin">ผู้ดูแลระบบ</option>
+                                <option value="staff">พนักงาน</option>
+                            </select>
+                        </div>
+                        <hr>
+                        <h6 class="mb-3">เปลี่ยนรหัสผ่าน</h6>
+                        <div class="mb-3">
+                            <label class="form-label">รหัสผ่านเดิม</label>
+                            <input type="password" class="form-control" name="currentPassword" id="currentPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">รหัสผ่านใหม่</label>
+                            <input type="password" class="form-control" name="newPassword" id="newPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ยืนยันรหัสผ่านใหม่</label>
+                            <input type="password" class="form-control" name="confirmPassword" id="confirmPassword">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Delete user
+document.querySelectorAll('.delete-user').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        if (confirm('คุณแน่ใจหรือไม่ที่จะลบพนักงานคนนี้?')) {
+            const id = e.target.dataset.id;
+            try {
+                const response = await fetch(`/users/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+            }
+        }
+    });
+});
+
+// เมื่อกดปุ่มแก้ไข ให้ดึงข้อมูลมาแสดงใน Modal
+document.querySelectorAll('.edit-user').forEach(button => {
+    button.addEventListener('click', (e) => {
+        const row = e.target.closest('tr');
+        const id = e.target.dataset.id;
+        
+        // ดึงข้อมูลจากตาราง
+        const username = row.cells[0].textContent;
+        const fullName = row.cells[1].textContent;
+        const email = row.cells[2].textContent;
+        const role = row.cells[3].textContent === 'ผู้ดูแลระบบ' ? 'admin' : 'staff';
+
+        // ใส่ข้อมูลลงใน Modal
+        document.getElementById('editUserId').value = id;
+        document.getElementById('editFullName').value = fullName !== '-' ? fullName : '';
+        document.getElementById('editEmail').value = email !== '-' ? email : '';
+        document.getElementById('editRole').value = role;
+    });
+});
+
+// จัดการการส่งฟอร์มแก้ไข
+document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('editUserId').value;
+    const formData = new FormData(e.target);
+    
+    // ตรวจสอบรหัสผ่าน
+    const currentPassword = formData.get('currentPassword');
+    const newPassword = formData.get('newPassword');
+    const confirmPassword = formData.get('confirmPassword');
+    
+    // ถ้ามีการกรอกรหัสผ่านใหม่
+    if (newPassword || confirmPassword || currentPassword) {
+        // ตรวจสอบว่ากรอกรหัสผ่านครบทุกช่อง
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            alert('กรุณากรอกข้อมูลรหัสผ่านให้ครบทุกช่อง');
+            return;
+        }
+        
+        // ตรวจสอบว่ารหัสผ่านใหม่ตรงกัน
+        if (newPassword !== confirmPassword) {
+            alert('รหัสผ่านใหม่ไม่ตรงกัน');
+            return;
+        }
+    }
+
+    const data = {
+        fullName: formData.get('fullName'),
+        email: formData.get('email'),
+        role: formData.get('role'),
+        currentPassword: currentPassword,
+        newPassword: newPassword
+    };
+
+    try {
+        const response = await fetch(`/users/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+    }
+});
+
+// Refresh page after adding new user
+document.getElementById('addUserModal').addEventListener('hidden.bs.modal', function () {
+    if (document.querySelector('.modal-backdrop')) {
+        window.location.reload();
+    }
+});
+</script> 
