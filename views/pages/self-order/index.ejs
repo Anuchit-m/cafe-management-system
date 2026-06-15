@@ -1,0 +1,485 @@
+<div class="tablet-container">
+    <!-- Left Menu Area -->
+    <div class="tablet-menu-area">
+        <!-- Header -->
+        <div class="tablet-header px-4 pt-4 pb-2 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-0 fw-bold text-dark" style="letter-spacing: -0.5px;">NOSTALGIC CAFE</h2>
+                <p class="text-muted mb-0 fs-5">Self-Ordering System</p>
+            </div>
+            <div class="bg-white px-4 py-2 rounded-pill shadow-sm border border-light">
+                <h4 class="mb-0 text-primary fw-bold" id="ui-table-name">กำลังโหลด...</h4>
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="tablet-categories px-4 py-3" id="categories-container">
+            <!-- Injected via JS -->
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="tablet-menu-grid px-4 pb-5" id="menu-grid">
+            <!-- Injected via JS -->
+            <div class="text-center py-5 text-muted w-100">
+                <div class="spinner-border text-primary" role="status"></div>
+                <h5 class="mt-3">กำลังโหลดเมนู...</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar Area -->
+    <div class="tablet-sidebar-area shadow">
+        <!-- Ordering Mode (Cart) -->
+        <div id="mode-ordering" class="h-100 d-flex flex-column" style="display: none !important;">
+            <div class="p-4 bg-white border-bottom">
+                <h3 class="fw-bold mb-0 text-dark">ออเดอร์ของคุณ</h3>
+                <p class="text-muted mb-0">กรุณาตรวจสอบรายการก่อนสั่ง</p>
+            </div>
+            
+            <div class="cart-items-container p-3 flex-grow-1 overflow-auto" style="position: relative;">
+                <div id="cart-items">
+                    <!-- Cart items injected via JS --> 
+                </div>
+                <div class="text-center py-5 text-muted" id="cart-empty-state" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%;">
+                    <div style="font-size: 4rem; opacity: 0.5;">🛒</div>
+                    <h5 class="mt-2">ยังไม่มีรายการอาหาร</h5>
+                    <p class="small">เลือกเมนูจากด้านซ้ายมือได้เลยครับ</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-top shadow-lg">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="fs-5 text-muted">รวมทั้งสิ้น</span>
+                    <strong class="fs-3 text-primary" id="cart-total-amount">฿0</strong>
+                </div>
+                <button class="btn btn-primary w-100 py-3 fs-4 fw-bold rounded-4 shadow-sm btn-order mb-3" id="btn-submit-order" onclick="submitOrder()" disabled>
+                    สั่งอาหาร
+                </button>
+                <button class="btn btn-outline-secondary w-100 py-2 fs-5 fw-bold rounded-4 d-none" id="btn-view-status" onclick="showMode('tracking')">
+                    ดูสถานะออเดอร์ปัจจุบัน
+                </button>
+            </div>
+        </div>
+
+        <!-- Tracking Mode -->
+        <div id="mode-tracking" class="h-100 flex-column bg-light" style="display: none !important;">
+            <div class="p-4 bg-white border-bottom text-center">
+                <div class="badge bg-primary fs-6 mb-2 rounded-pill px-3 py-2" id="track-status-badge">กำลังโหลดสถานะ...</div>
+                <h3 class="fw-bold mb-0 text-dark" id="track-order-number">#ORD-XXXX</h3>
+            </div>
+            
+            <div class="p-3 flex-grow-1 overflow-auto bg-white" id="track-items">
+                <!-- Ordered items injected via JS -->
+            </div>
+
+            <div class="p-4 bg-white border-top shadow-lg">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="fs-5 text-muted">ยอดที่ต้องชำระ</span>
+                    <strong class="fs-3 text-dark" id="track-total-amount">฿0</strong>
+                </div>
+                <!-- This button appears when status is completed -->
+                <button class="btn btn-success w-100 py-3 fs-4 fw-bold rounded-4 shadow d-none btn-order mb-3" id="btn-pay-order" onclick="openTabletPayment()">
+                    💳 ชำระเงิน (QR / บัตร)
+                </button>
+                <button class="btn btn-outline-primary w-100 py-2 fs-5 fw-bold rounded-4" onclick="showMode('ordering')">
+                    + สั่งอาหารเพิ่ม
+                </button>
+                <div id="msg-wait-food" class="text-center text-muted fs-5 mt-3">
+                    กำลังเตรียมอาหาร กรุณารอสักครู่...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Overlay & Drawer (Similar to Admin but styled for Tablet) -->
+    <div class="payment-drawer-overlay" id="tablet-payment-overlay" onclick="closeTabletPayment()"></div>
+    
+    <div class="payment-drawer" id="tablet-payment-drawer" style="width: 450px;">
+        <div class="payment-drawer-header py-4 px-4 bg-white border-bottom">
+            <h3 class="mb-0 text-dark fw-bold d-flex align-items-center gap-2">
+                <span class="fs-2">💳</span> ชำระเงิน
+            </h3>
+            <button type="button" class="btn-close fs-4" aria-label="Close" onclick="closeTabletPayment()"></button>
+        </div>
+        
+        <div class="payment-drawer-body p-4 bg-light">
+            <h5 class="mb-3 text-muted">เลือกวิธีชำระเงิน</h5>
+            <div class="payment-method-selector" style="grid-template-columns: 1fr 1fr;">
+                <div class="payment-method-card active p-4" data-method="qr">
+                    <div class="mb-2" style="font-size: 3rem;">📱</div>
+                    <div class="fs-5 fw-bold">QR Code</div>
+                </div>
+                <div class="payment-method-card p-4" data-method="card">
+                    <div class="mb-2" style="font-size: 3rem;">💳</div>
+                    <div class="fs-5 fw-bold">บัตรเครดิต</div>
+                </div>
+            </div>
+
+            <div id="tablet-qr-mock" class="text-center mt-4 p-4 bg-white rounded-4 border shadow-sm">
+                <p class="text-muted mb-2">สแกนเพื่อชำระเงิน</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=MOCK_PAYMENT" alt="QR Code" class="img-fluid rounded">
+                <h4 class="mt-3 text-primary fw-bold" id="tablet-pay-amount">฿0</h4>
+            </div>
+            
+            <div id="tablet-card-mock" class="text-center mt-4 p-4 bg-white rounded-4 border shadow-sm" style="display: none;">
+                <p class="text-muted mb-2">แตะบัตรที่เครื่องอ่าน</p>
+                <div style="font-size: 5rem; color: #cbd5e1;">💳</div>
+                <h4 class="mt-3 text-primary fw-bold" id="tablet-card-amount">฿0</h4>
+            </div>
+        </div>
+
+        <div class="payment-drawer-footer p-4 bg-white border-top">
+            <button class="btn btn-primary w-100 py-3 fs-4 fw-bold rounded-4 shadow-sm btn-order" id="btn-confirm-tablet-payment" onclick="confirmTabletPayment()">
+                ยืนยันการชำระเงิน
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tableId = '<%= tableId %>';
+    let currentData = null;
+    let cart = []; // Array of { menuId, name, price, quantity }
+    let pollingInterval = null;
+    let selectedPaymentMethod = 'qr';
+    let currentOrderId = null;
+
+    // --- Core Logic ---
+    async function loadTableData() {
+        try {
+            const res = await fetch(`/self-orders/table/${tableId}`);
+            if (!res.ok) throw new Error('Failed to fetch');
+            const data = await res.json();
+            currentData = data;
+            
+            // Update UI
+            document.getElementById('ui-table-name').textContent = data.table.name;
+            
+            // Always render the menu
+            renderCategories(data.categories);
+            if (data.categories.length > 0) {
+                renderMenuGrid(data.categories[0].items);
+            }
+
+            if (data.currentOrder && data.currentOrder.isPaid === false) {
+                // Already ordered, go to tracking mode
+                renderTrackingMode();
+                startPolling();
+            } else {
+                // Free to order
+                showMode('ordering');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        }
+    }
+
+    // --- UI Rendering ---
+    function showMode(mode) {
+        document.getElementById('mode-ordering').style.setProperty('display', mode === 'ordering' ? 'flex' : 'none', 'important');
+        document.getElementById('mode-tracking').style.setProperty('display', mode === 'tracking' ? 'flex' : 'none', 'important');
+        
+        // Toggle view status button visibility in ordering mode
+        const viewStatusBtn = document.getElementById('btn-view-status');
+        if (viewStatusBtn) {
+            // ถ้ามี aggregatedOrder (isPaid: false) โชว์ปุ่มดูสถานะ
+            if (currentData && currentData.currentOrder && currentData.currentOrder.isPaid === false && mode === 'ordering') {
+                viewStatusBtn.classList.remove('d-none');
+            } else {
+                viewStatusBtn.classList.add('d-none');
+            }
+        }
+    }
+
+    function renderCategories(categories) {
+        const container = document.getElementById('categories-container');
+        container.innerHTML = categories.map((cat, index) => `
+            <button class="tablet-cat-btn ${index === 0 ? 'active' : ''}" onclick="selectCategory(this, ${index})">
+                ${cat.name}
+            </button>
+        `).join('');
+    }
+
+    window.selectCategory = function(btn, index) {
+        document.querySelectorAll('.tablet-cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (currentData && currentData.categories[index]) {
+            renderMenuGrid(currentData.categories[index].items);
+        }
+    };
+
+    function renderMenuGrid(items) {
+        const grid = document.getElementById('menu-grid');
+        grid.innerHTML = items.map(item => `
+            <div class="menu-card-tablet shadow-sm" onclick="addToCart('${item._id}', '${item.name}', ${item.price})">
+                <div class="menu-card-img-placeholder" style="${item.image ? `background-image: url('${item.image}'); background-size: cover; background-position: center;` : ''}"></div>
+                <div class="p-3">
+                    <h5 class="fw-bold text-dark mb-1 text-truncate">${item.name}</h5>
+                    <div class="text-primary fw-bold fs-5">฿${item.price.toLocaleString()}</div>
+                </div>
+                <div class="add-btn-overlay">
+                    <span>+ เพิ่ม</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- Cart Logic ---
+    window.addToCart = function(menuId, name, price) {
+        const existing = cart.find(i => i.menuId === menuId);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({ menuId, name, price, quantity: 1 });
+        }
+        showMode('ordering');
+        renderCart();
+    };
+
+    window.updateCartQty = function(menuId, delta) {
+        const item = cart.find(i => i.menuId === menuId);
+        if (item) {
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.menuId !== menuId);
+            }
+            renderCart();
+        }
+    };
+
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        const totalEl = document.getElementById('cart-total-amount');
+        const btnSubmit = document.getElementById('btn-submit-order');
+        const emptyState = document.getElementById('cart-empty-state');
+
+        if (cart.length === 0) {
+            emptyState.style.display = 'block';
+            container.innerHTML = '';
+            totalEl.textContent = '฿0';
+            btnSubmit.disabled = true;
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        let total = 0;
+        
+        container.innerHTML = cart.map(item => {
+            total += item.price * item.quantity;
+            return `
+                <div class="cart-item-tablet mb-3 p-3 bg-white border rounded-4 shadow-sm d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-dark fs-5">${item.name}</div>
+                        <div class="text-muted">฿${item.price}</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-outline-secondary rounded-circle qty-btn" onclick="updateCartQty('${item.menuId}', -1)">-</button>
+                        <span class="fs-4 fw-bold w-30px text-center">${item.quantity}</span>
+                        <button class="btn btn-outline-primary rounded-circle qty-btn" onclick="updateCartQty('${item.menuId}', 1)">+</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        totalEl.textContent = `฿${total.toLocaleString()}`;
+        btnSubmit.disabled = false;
+    }
+
+    // --- Submission ---
+    window.submitOrder = async function() {
+        if (cart.length === 0) return;
+        
+        const btn = document.getElementById('btn-submit-order');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังส่ง...';
+
+        try {
+            const res = await fetch(`/self-orders/table/${tableId}/order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: cart })
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                // Success
+                cart = [];
+                renderCart(); // เคลียร์ตะกร้าใน UI
+                btn.innerHTML = 'สั่งอาหาร'; // รีเซ็ตปุ่ม
+                renderTrackingMode();
+                startPolling();
+            } else {
+                alert(data.message || 'เกิดข้อผิดพลาด');
+                btn.disabled = false;
+                btn.textContent = 'สั่งอาหาร';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('ระบบขัดข้อง');
+            btn.disabled = false;
+            btn.textContent = 'สั่งอาหาร';
+        }
+    };
+
+    // --- Tracking Mode ---
+    async function renderTrackingMode() {
+        showMode('tracking');
+        await fetchOrderStatus();
+    }
+
+    async function fetchOrderStatus() {
+        try {
+            const res = await fetch(`/self-orders/table/${tableId}/status`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const order = data.order;
+            
+            if (order.isPaid) {
+                // If paid somehow, reset
+                stopPolling();
+                location.reload();
+                return;
+            }
+
+            document.getElementById('track-order-number').textContent = `#${order.orderNumber}`;
+            
+            // Status styling
+            const badge = document.getElementById('track-status-badge');
+            badge.textContent = order.statusLabel;
+            badge.className = 'badge fs-6 mb-2 rounded-pill px-3 py-2 ';
+            
+            const btnPay = document.getElementById('btn-pay-order');
+            const msgWait = document.getElementById('msg-wait-food');
+            
+            if (order.status === 'completed') {
+                badge.classList.add('bg-success');
+                btnPay.classList.remove('d-none');
+                msgWait.classList.add('d-none');
+            } else if (order.status === 'preparing') {
+                badge.classList.add('bg-warning', 'text-dark');
+                btnPay.classList.add('d-none');
+                msgWait.classList.remove('d-none');
+                msgWait.textContent = 'กำลังเตรียมอาหาร หอมๆ เลยครับ...';
+            } else {
+                badge.classList.add('bg-secondary');
+                btnPay.classList.add('d-none');
+                msgWait.classList.remove('d-none');
+                msgWait.textContent = 'ออเดอร์ถึงครัวแล้ว รอคิวสักครู่นะครับ';
+            }
+
+            document.getElementById('track-total-amount').textContent = `฿${order.totalAmount.toLocaleString()}`;
+            document.getElementById('tablet-pay-amount').textContent = `฿${order.totalAmount.toLocaleString()}`;
+            document.getElementById('tablet-card-amount').textContent = `฿${order.totalAmount.toLocaleString()}`;
+
+            // Render Items
+            const itemsContainer = document.getElementById('track-items');
+            itemsContainer.innerHTML = order.items.map(item => `
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
+                    <div>
+                        <div class="fw-bold text-dark fs-5">${item.name}</div>
+                        <div class="text-muted small">x${item.quantity}</div>
+                    </div>
+                    <div class="fs-5 fw-bold text-dark">฿${item.subtotal.toLocaleString()}</div>
+                </div>
+            `).join('');
+
+        } catch (err) {
+            console.error('Error fetching status:', err);
+        }
+    }
+
+    function startPolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(() => {
+            fetchOrderStatus();
+        }, 5000); // Poll every 5s
+    }
+
+    function stopPolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+    }
+
+    // --- Payment Drawer ---
+    window.openTabletPayment = function() {
+        document.getElementById('tablet-payment-overlay').classList.add('open');
+        document.getElementById('tablet-payment-drawer').classList.add('open');
+        
+        // Default select QR
+        selectTabletPaymentMethod('qr');
+    };
+
+    window.closeTabletPayment = function() {
+        document.getElementById('tablet-payment-overlay').classList.remove('open');
+        document.getElementById('tablet-payment-drawer').classList.remove('open');
+    };
+
+    window.selectTabletPaymentMethod = function(method) {
+        selectedPaymentMethod = method;
+        document.querySelectorAll('#tablet-payment-drawer .payment-method-card').forEach(c => {
+            c.classList.remove('active');
+        });
+        document.querySelector(`#tablet-payment-drawer .payment-method-card[data-method="${method}"]`).classList.add('active');
+        
+        if (method === 'qr') {
+            document.getElementById('tablet-qr-mock').style.display = 'block';
+            document.getElementById('tablet-card-mock').style.display = 'none';
+        } else {
+            document.getElementById('tablet-qr-mock').style.display = 'none';
+            document.getElementById('tablet-card-mock').style.display = 'block';
+        }
+    };
+
+    document.querySelectorAll('#tablet-payment-drawer .payment-method-card').forEach(card => {
+        card.addEventListener('click', function() {
+            selectTabletPaymentMethod(this.dataset.method);
+        });
+    });
+
+    window.confirmTabletPayment = async function() {
+        const btn = document.getElementById('btn-confirm-tablet-payment');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังชำระเงิน...';
+
+        try {
+            const res = await fetch(`/self-orders/table/${tableId}/pay`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentMethod: selectedPaymentMethod })
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                // Success
+                stopPolling();
+                closeTabletPayment();
+                
+                // Show success full screen overlay
+                document.body.innerHTML += `
+                    <div style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <div style="font-size: 6rem; margin-bottom: 20px;">✅</div>
+                        <h1 class="text-success fw-bold">ชำระเงินสำเร็จ</h1>
+                        <p class="fs-4 text-muted">ขอบคุณที่ใช้บริการครับ</p>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 4000);
+            } else {
+                alert(data.message || 'เกิดข้อผิดพลาด');
+                btn.disabled = false;
+                btn.textContent = 'ยืนยันการชำระเงิน';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('ระบบขัดข้อง');
+            btn.disabled = false;
+            btn.textContent = 'ยืนยันการชำระเงิน';
+        }
+    };
+
+    // Init
+    loadTableData();
+
+</script>

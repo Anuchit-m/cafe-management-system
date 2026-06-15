@@ -1,0 +1,439 @@
+<div class="container mt-4">
+
+    <%
+        const freeCount     = tables.filter(t => t.status === 'available').length;
+        const occupiedCount = tables.filter(t => t.status === 'occupied').length;
+        const reservedCount = tables.filter(t => t.status === 'reserved').length;
+    %>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="mb-0">แผนผังร้าน</h2>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small" id="refresh-text">รีเฟรชใน <span id="countdown">30</span>วิ</span>
+            <button class="btn btn-outline-secondary btn-sm" onclick="location.reload()">↻ รีเฟรช</button>
+            <% if (locals.user && locals.user.role === 'admin') { %>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTableModal">
+                + เพิ่มโต๊ะ
+            </button>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        <div class="col">
+            <div class="card border-0 bg-light text-center">
+                <div class="card-body py-2">
+                    <div class="fs-3 fw-bold text-dark"><%= tables.length %></div>
+                    <div class="small text-muted">ทั้งหมด</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 text-center" style="background-color:#d1e7dd">
+                <div class="card-body py-2">
+                    <div class="fs-3 fw-bold text-success"><%= freeCount %></div>
+                    <div class="small text-success">ว่าง</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 text-center" style="background-color:#f8d7da">
+                <div class="card-body py-2">
+                    <div class="fs-3 fw-bold text-danger"><%= occupiedCount %></div>
+                    <div class="small text-danger">มีลูกค้า</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 text-center" style="background-color:#fff3cd">
+                <div class="card-body py-2">
+                    <div class="fs-3 fw-bold text-warning"><%= reservedCount %></div>
+                    <div class="small" style="color:#997404">จองแล้ว</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Grid (Split-Panel) -->
+    <% if (tables.length === 0) { %>
+    <div class="text-center py-5">
+        <p class="text-muted fs-5">ยังไม่มีโต๊ะในระบบ</p>
+        <% if (locals.user && locals.user.role === 'admin') { %>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTableModal">เพิ่มโต๊ะแรก</button>
+        <% } %>
+    </div>
+    <% } else { %>
+    <div class="split-panel-layout mt-3">
+        <!-- Left List Panel -->
+        <div class="list-panel">
+            <div class="list-panel-header pb-0">
+                <div class="filter-tabs" id="table-filters">
+                    <div class="filter-tab active" data-filter="all">ทั้งหมด (<%= tables.length %>)</div>
+                    <div class="filter-tab" data-filter="available">ว่าง (<%= freeCount %>)</div>
+                    <div class="filter-tab" data-filter="occupied">ลูกค้า (<%= occupiedCount %>)</div>
+                    <div class="filter-tab" data-filter="reserved">จอง (<%= reservedCount %>)</div>
+                </div>
+            </div>
+            <div class="list-panel-body" id="table-list">
+                <% tables.forEach(table => { 
+                    let badgeClass = 'bg-success';
+                    let statusText = 'ว่าง';
+                    if (table.status === 'occupied') { badgeClass = 'bg-danger'; statusText = 'มีลูกค้า'; }
+                    else if (table.status === 'reserved') { badgeClass = 'bg-warning text-dark'; statusText = 'จองแล้ว'; }
+                %>
+                    <div class="list-item table-list-item" data-id="<%= table._id %>" data-status="<%= table.status %>" onclick="selectTable('<%= table._id %>')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="text-dark">โต๊ะ <%= table.tableNumber %></strong>
+                            <span class="badge <%= badgeClass %>"><%= statusText %></span>
+                        </div>
+                        <div class="text-muted small d-flex justify-content-between">
+                            <span><%= table.name && table.name !== `โต๊ะ ${table.tableNumber}` ? table.name : '👥 ' + table.capacity + ' ที่นั่ง' %></span>
+                            <% if (table.status === 'occupied' && table.currentOrder) { %>
+                                <span class="text-danger fw-medium">฿<%= table.currentOrder.totalAmount.toLocaleString() %></span>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <!-- Right Detail Panel -->
+        <div class="detail-panel">
+            <div id="table-detail-empty" class="detail-empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🪑</div>
+                <h4>ยังไม่ได้เลือกโต๊ะ</h4>
+                <p>คลิกที่โต๊ะในรายการด้านซ้ายเพื่อดูรายละเอียด</p>
+            </div>
+            
+            <div id="table-detail-content" class="d-none h-100 flex-column">
+                <div class="detail-panel-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 text-dark" id="table-detail-title">โต๊ะ #</h4>
+                        <p class="text-muted small mb-0" id="table-detail-meta">ความจุ -</p>
+                    </div>
+                    <span id="table-detail-badge" class="badge">สถานะ</span>
+                </div>
+                
+                <div class="detail-panel-body" id="table-detail-info">
+                    <!-- Info injected via JS -->
+                </div>
+                
+                <div class="detail-panel-footer d-flex flex-wrap gap-2" id="table-detail-actions">
+                    <!-- Actions injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+</div>
+
+<!-- ─── Modal: เพิ่มโต๊ะ (admin) ─── -->
+<div class="modal fade" id="addTableModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">เพิ่มโต๊ะใหม่</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/tables" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">หมายเลขโต๊ะ <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="tableNumber" min="1" required placeholder="เช่น 1, 2, 3">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ชื่อโต๊ะ (ถ้ามี)</label>
+                        <input type="text" class="form-control" name="name" placeholder="เช่น VIP Zone, ริมหน้าต่าง">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">จำนวนที่นั่ง <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="capacity" min="1" max="20" value="2" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">หมายเหตุ</label>
+                        <input type="text" class="form-control" name="notes" placeholder="เช่น ใกล้เคาน์เตอร์, ข้างนอก">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">เพิ่มโต๊ะ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Modal: จองโต๊ะ ─── -->
+<div class="modal fade" id="reserveModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">จองโต๊ะ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">ชื่อผู้จอง</label>
+                <input type="text" class="form-control" id="reservedByInput" placeholder="ชื่อลูกค้า">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-warning" id="confirmReserveBtn">ยืนยันการจอง</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── Auto-refresh countdown ───────────────────────────────────────────
+let seconds = 30;
+const countdownEl = document.getElementById('countdown');
+
+setInterval(() => {
+    seconds--;
+    if (countdownEl) countdownEl.textContent = seconds;
+    if (seconds <= 0) location.reload();
+}, 1000);
+
+// ─── คำนวณเวลาที่โต๊ะถูกใช้ ──────────────────────────────────────────
+<% tables.filter(t => t.status === 'occupied' && t.currentOrder).forEach(table => { %>
+(function() {
+    const since    = new Date('<%= table.currentOrder.createdAt %>');
+    const el       = document.getElementById('elapsed-<%= table._id %>');
+    if (!el) return;
+
+    function update() {
+        const diff    = Date.now() - since.getTime();
+        const mins    = Math.floor(diff / 60000);
+        const hrs     = Math.floor(mins / 60);
+        el.textContent = hrs > 0
+            ? `⏱ ${hrs} ชม. ${mins % 60} นาที`
+            : `⏱ ${mins} นาที`;
+    }
+    update();
+    setInterval(update, 60000);
+})();
+<% }) %>
+
+// ─── อัปเดตสถานะโต๊ะ ─────────────────────────────────────────────────
+async function updateStatus(tableId, newStatus, reservedBy = '') {
+    try {
+        const body = { status: newStatus };
+        if (newStatus === 'reserved' && reservedBy) body.reservedBy = reservedBy;
+
+        const res  = await fetch(`/tables/${tableId}/status`, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            location.reload();
+        } else {
+            alert(data.message || 'เกิดข้อผิดพลาด');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+    }
+}
+
+// ─── Reserve Modal ────────────────────────────────────────────────────
+let pendingReserveId = null;
+
+function openReserveModal(tableId) {
+    pendingReserveId = tableId;
+    document.getElementById('reservedByInput').value = '';
+    new bootstrap.Modal(document.getElementById('reserveModal')).show();
+}
+
+document.getElementById('confirmReserveBtn').addEventListener('click', () => {
+    const name = document.getElementById('reservedByInput').value.trim();
+    if (!name) {
+        alert('กรุณากรอกชื่อผู้จอง');
+        return;
+    }
+    bootstrap.Modal.getInstance(document.getElementById('reserveModal')).hide();
+    updateStatus(pendingReserveId, 'reserved', name);
+});
+
+// ─── ลบโต๊ะ ──────────────────────────────────────────────────────────
+async function deleteTable(tableId, tableNumber) {
+    if (!confirm(`ต้องการลบโต๊ะ ${tableNumber} ใช่หรือไม่?`)) return;
+
+    try {
+        const res  = await fetch(`/tables/${tableId}`, {
+            method:  'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            location.reload();
+        } else {
+            alert(data.message || 'เกิดข้อผิดพลาด');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('เกิดข้อผิดพลาด');
+    }
+}
+
+// ─── Split-Panel Logic for Tables ─────────────────────────────────────
+const tablesData = <%- JSON.stringify(tables || []).replace(/</g, '\\u003c') %>;
+const userRole = '<%= locals.user ? locals.user.role : "" %>';
+const tableFilterTabs = document.querySelectorAll('#table-filters .filter-tab');
+const tableListItems = document.querySelectorAll('.table-list-item');
+const tableEmptyState = document.getElementById('table-detail-empty');
+const tableContentState = document.getElementById('table-detail-content');
+
+window.selectTable = function(tableId) {
+    // Update active class on list
+    tableListItems.forEach(item => item.classList.remove('active'));
+    const activeItem = document.querySelector(`.table-list-item[data-id="${tableId}"]`);
+    if (activeItem) activeItem.classList.add('active');
+
+    const table = tablesData.find(t => t._id === tableId);
+    if (!table) return;
+
+    // Hide empty state, show content
+    tableEmptyState.classList.add('d-none');
+    tableContentState.classList.remove('d-none');
+    tableContentState.classList.add('d-flex');
+
+    // Populate headers
+    document.getElementById('table-detail-title').textContent = `โต๊ะ ${table.tableNumber}`;
+    const nameStr = (table.name && table.name !== `โต๊ะ ${table.tableNumber}`) ? ` • ${table.name}` : '';
+    document.getElementById('table-detail-meta').innerHTML = `👥 ${table.capacity} ที่นั่ง${nameStr}`;
+    
+    // Status badge
+    const badge = document.getElementById('table-detail-badge');
+    if (table.status === 'available') { badge.className = 'badge bg-success'; badge.textContent = 'ว่าง'; }
+    else if (table.status === 'occupied') { badge.className = 'badge bg-danger'; badge.textContent = 'มีลูกค้า'; }
+    else if (table.status === 'reserved') { badge.className = 'badge bg-warning text-dark'; badge.textContent = 'จองแล้ว'; }
+
+    // Populate info area
+    const infoContainer = document.getElementById('table-detail-info');
+    let infoHtml = '';
+
+    if (table.status === 'occupied') {
+        if (table.currentOrder) {
+            infoHtml += `
+                <div class="bg-light rounded p-3 mb-3 border">
+                    <h6 class="text-danger mb-3">สถานะออเดอร์ปัจจุบัน</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">ออเดอร์:</span>
+                        <strong>#${table.currentOrder.orderNumber}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">ลูกค้า:</span>
+                        <strong>${table.currentOrder.customerName || '-'}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">ยอดรวม:</span>
+                        <strong class="text-primary fs-5">฿${table.currentOrder.totalAmount.toLocaleString()}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">เวลาที่ใช้:</span>
+                        <strong class="text-muted" id="detail-elapsed-${table._id}">⏱ กำลังคำนวณ...</strong>
+                    </div>
+                </div>
+            `;
+            // Trigger elapsed time calc for detail view
+            setTimeout(() => {
+                const since = new Date(table.currentOrder.createdAt);
+                const el = document.getElementById(`detail-elapsed-${table._id}`);
+                if (el) {
+                    const diff = Date.now() - since.getTime();
+                    const mins = Math.floor(diff / 60000);
+                    const hrs = Math.floor(mins / 60);
+                    el.textContent = hrs > 0 ? `⏱ ${hrs} ชม. ${mins % 60} นาที` : `⏱ ${mins} นาที`;
+                }
+            }, 100);
+        } else {
+            infoHtml += `<div class="bg-light rounded p-3 mb-3 border text-center text-muted">มีลูกค้า (ยังไม่มีออเดอร์)</div>`;
+        }
+    } else if (table.status === 'reserved') {
+        infoHtml += `
+            <div class="bg-light rounded p-3 mb-3 border">
+                <h6 class="text-warning mb-3">รายละเอียดการจอง</h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">จองโดย:</span>
+                    <strong>${table.reservedBy || '-'}</strong>
+                </div>
+                ${table.reservedAt ? `
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">เวลา:</span>
+                    <strong>${new Date(table.reservedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</strong>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    if (table.notes) {
+        infoHtml += `
+            <div class="mb-3">
+                <span class="text-muted small">หมายเหตุ</span>
+                <p class="mb-0">📝 ${table.notes}</p>
+            </div>
+        `;
+    }
+
+    infoHtml += `
+        <div class="text-muted small mt-auto text-end">
+            อัปเดตล่าสุด: ${new Date(table.updatedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+    `;
+    infoContainer.innerHTML = infoHtml;
+
+    // Populate actions
+    const actionsContainer = document.getElementById('table-detail-actions');
+    let actionsHtml = '';
+
+    if (table.status !== 'available') {
+        actionsHtml += `<button class="btn btn-success flex-grow-1" onclick="updateStatus('${table._id}', 'available')">✓ ว่างแล้ว (Clear Table)</button>`;
+    }
+    
+    if (table.status === 'available') {
+        actionsHtml += `
+            <button class="btn btn-outline-danger flex-grow-1" onclick="updateStatus('${table._id}', 'occupied')">มีลูกค้า (Walk-in)</button>
+            <button class="btn btn-outline-warning flex-grow-1" onclick="openReserveModal('${table._id}')">📅 จองโต๊ะ (Reserve)</button>
+        `;
+    }
+
+    if (userRole === 'admin') {
+        actionsHtml += `<button class="btn btn-outline-secondary w-100 mt-2" onclick="deleteTable('${table._id}', ${table.tableNumber})">🗑 ลบโต๊ะ (Delete)</button>`;
+    }
+    
+    actionsContainer.innerHTML = actionsHtml;
+};
+
+// Filtering logic
+tableFilterTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        tableFilterTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const filterStatus = tab.dataset.filter;
+        
+        tableListItems.forEach(item => {
+            const itemStatus = item.dataset.status;
+            if (filterStatus === 'all' || itemStatus === filterStatus) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Hide detail panel on filter change to reset view
+        tableEmptyState.classList.remove('d-none');
+        tableContentState.classList.add('d-none');
+        tableContentState.classList.remove('d-flex');
+        tableListItems.forEach(item => item.classList.remove('active'));
+    });
+});
+</script>

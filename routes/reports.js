@@ -7,8 +7,25 @@ router.get('/', async (req, res) => {
     try {
         // ดึงข้อมูลวันที่เริ่มต้นและสิ้นสุด (ถ้าไม่มีให้ใช้วันนี้)
         const today = new Date();
-        const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(today.setHours(0, 0, 0, 0));
-        const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date(today.setHours(23, 59, 59, 999));
+        const startDate = req.query.startDate
+        ? new Date(req.query.startDate)
+        : new Date(new Date().setHours(0,0,0,0));
+        const endDate = req.query.endDate 
+        ? new Date(new Date(req.query.endDate).setHours(23,59,59,999))
+        : new Date(new Date().setHours(23,59,59,999));
+
+        if(startDate > endDate){
+            return res.render('pages/reports/index',{
+                title: 'รายงาน',
+                layout: 'layout/main',
+                error: 'วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด',
+                summary: {totalOrders:0,totalSales:0,averageOrderValue:0},
+                topMenus: [],
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                orders: []
+            });
+        }
 
         // ดึงข้อมูลออเดอร์ตามช่วงเวลา
         const orders = await Order.find({
@@ -27,11 +44,11 @@ router.get('/', async (req, res) => {
                 orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length : 0
         };
 
-        // สรุปยอดขายตามเมนู
+        // สรุปยอดขายตามเมนู and add null check
         const menuSales = {};
         orders.forEach(order => {
             order.items.forEach(item => {
-                const menuName = item.menu.name;
+                const menuName = item.menu?.name || 'เมนูถูกลบแล้ว';
                 if (!menuSales[menuName]) {
                     menuSales[menuName] = {
                         quantity: 0,

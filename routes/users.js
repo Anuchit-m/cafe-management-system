@@ -2,16 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const { isAuthenticated } = require('../middleware/auth');
-
-// Middleware to check if user is admin
-const isAdmin = (req, res, next) => {
-    if (req.session.user && req.session.user.role === 'admin') {
-        next();
-    } else {
-        res.status(403).send('Access denied');
-    }
-};
+const { isAuthenticated, isAdmin } = require('../middleware/auth');
 
 // Get all users
 router.get('/', isAuthenticated, async (req, res) => {
@@ -38,30 +29,27 @@ router.post('/', isAuthenticated, async (req, res) => {
     try {
         const { username, password, fullName, email, role } = req.body;
 
+        if (!username || !password){
+            return res.status(400).json({message: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'});
+        }
+
+        if (password.length<6){
+            return res.status(400).json({message:'รหัสผ่านต้องมีอย่างน้อย 6 ตัว'})
+        }
+
         // Check if username already exists
         const existingUser = await User.findOne({ username });
         if (existingUser) {
             return res.status(400).json({ message: 'ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว' });
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Create new user
-        const user = new User({
-            username,
-            password: hashedPassword,
-            fullName,
-            email,
-            role
-        });
-
+        const user = new User ({username,password,fullName,email,role});
         await user.save();
+        
         res.redirect('/users');
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).json({ message: 'เกิดข้อผิดพลาดในการสร้างผู้ใช้' });
+    }catch (error){
+        console.error('Error create user : ' ,error);
+        res.status(500).json({message: 'เกิดข้อผิดพลาดในการสร้างผู้ใช้'});
     }
 });
 
@@ -73,15 +61,20 @@ router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
 
         // ถ้ามีการเปลี่ยนรหัสผ่าน
         if (currentPassword && newPassword) {
-            // ตรวจสอบรหัสผ่านเดิม
-            const user = await User.findById(req.params.id);
-            const isMatch = await bcrypt.compare(currentPassword, user.password);
-            
-            if (!isMatch) {
-                return res.status(400).json({ message: 'รหัสผ่านเดิมไม่ถูกต้อง' });
+            if (newPassword.length<6) {
+                return res.status(400).json({message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัว'})
             }
 
-            // เข้ารหัสรหัสผ่านใหม่
+            const existingUser = await User.findById(req.params.id);
+            if (!existingUser) {
+                return res.status(404).json({ message: 'ไม่พบผู้ใช้' });
+            }
+
+            const isMatch = await existingUser.comparePassword(currentPassword);
+            if (!isMatch){
+                return res.status(400).json({message:'รหัสผ่านเดิมไม่ถูกต้อง'})
+            }
+
             const salt = await bcrypt.genSalt(10);
             updateData.password = await bcrypt.hash(newPassword, salt);
         }
@@ -98,11 +91,14 @@ router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
 router.delete('/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
         // Prevent deleting self
-        if (req.params.id === req.session.user.id) {
+        if (req.params.id === String(req.session.user.id)) {
             return res.status(400).json({ message: 'ไม่สามารถลบบัญชีตัวเองได้' });
         }
 
-        await User.findByIdAndDelete(req.params.id);
+        const user = await User.findByIdAndDelete(req.params.id);
+        if(!user){
+            return res.status(404).json({message:'ไม่พบผู้ใช้นี้'})
+        }
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error('Error deleting user:', error);

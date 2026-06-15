@@ -24,6 +24,12 @@ const orderSchema = new mongoose.Schema({
     }],
     customerName: String,
     tableNumber: String,
+
+    table:{ 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Table',
+        default: null
+    },
     totalAmount: {
         type: Number,
         required: true
@@ -32,7 +38,24 @@ const orderSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'preparing', 'completed', 'cancelled'],
         default: 'pending'
-    }
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['cash', 'qr', 'card'],
+        default: null
+    },
+    source:{
+        type: String,
+        enum: ['staff', 'self-order'],
+        default: 'staff'
+    },
+    paymentMetod : {type: String, enum: ['cash', 'qr', 'card'], default: null},
+    paidAt: {type: Date, default: null},
+    receivedAmount: {type: Number, default: null},
+    change: {type: Number, default: null},
+    receiptPrinted: {type: Boolean, default: false},
+    receiptPrintedAt: {type: Date, default: null}
+
 }, {
     timestamps: true
 });

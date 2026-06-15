@@ -28,23 +28,47 @@ router.post('/', async (req, res) => {
     try {
         const { customerName, tableNumber, menuItems } = req.body;
         
-        const items = Array.isArray(menuItems) ? menuItems : [menuItems];
+        // validate menu Item
+        if(!menuItems){
+            return res.status(400).json({message: 'กรุณาเลือกรายการอาหารอย่างน้อย 1 รายการ'})
+        }
         
-        const orderItems = await Promise.all(items.filter(item => item.quantity > 0).map(async (item) => {
+        const items = Array.isArray(menuItems) ? menuItems : [menuItems];
+
+        const validItems = items.filter(item => item && parseInt(item.quantity)>0)
+
+        if (validItems.length === 0) {
+            return res.status(400).json({message: 'กรุณาเลือกรายการอาหารอย่างน้อย 1 รายการ'});
+        }
+        
+        //validate nullcheck
+        const orderItems = [];
+        for (const item of validItems){
             const menu = await Menu.findById(item.menuId);
-            return {
+
+            if (!menu){
+                return res.status(400).json({
+                    message: `ไม่พบเมนู ID: ${item.menuId} อาจถูกลบไปแล้ว`
+                });
+            }
+            if (menu.status !== 'available') {
+                return res.status(400).json({
+                    message: `เมนู "${menu.name}" ไม่พร้อมให้บริการขณะนี้`
+                });
+            }
+            orderItems.push({
                 menu: menu._id,
                 quantity: parseInt(item.quantity),
                 price: menu.price
-            };
-        }));
+            });
+        }
 
         const totalAmount = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         const order = new Order({
             orderNumber: `ORD${Date.now()}`,
             items: orderItems,
-            customerName,
+            customerName: customerName || 'ลูกค้าทั่วไป',
             tableNumber,
             totalAmount,
             status: 'pending'
@@ -62,8 +86,20 @@ router.post('/', async (req, res) => {
 router.put('/:id/status', async (req, res) => {
     try {
         const { status } = req.body;
-        await Order.findByIdAndUpdate(req.params.id, { status });
-        res.json({ message: 'Order status updated successfully' });
+        
+        const allowedStatuses = ['pending','preparing','completed','cancelled'];
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({message: 'สถานะไม่ถูกต้อง'});
+        }
+        const order = await Order.findByIdAndUpdate(
+            req.params.id,
+            {status},
+            {new:true}
+        );
+        if(!order){
+            return res.status(404).json({message: 'ไม่พบออเดอร์นี้ '});
+        }
+        res.json({message: 'อัปเดตสถานะออเดอร์สำเร็จ'})
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

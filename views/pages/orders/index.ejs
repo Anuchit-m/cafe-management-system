@@ -6,171 +6,285 @@
         </button>
     </div>
 
-    <!-- Orders List -->
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-warning text-white">
-                    <h5 class="card-title mb-0">รอดำเนินการ</h5>
+    <!-- Orders List (Split-Panel) -->
+    <div class="split-panel-layout mt-3">
+        <!-- Left List Panel -->
+        <div class="list-panel">
+            <div class="list-panel-header pb-0">
+                <div class="filter-tabs" id="order-filters">
+                    <div class="filter-tab active" data-filter="pending">รอ (<%= orders.filter(o => o.status === 'pending').length %>)</div>
+                    <div class="filter-tab" data-filter="preparing">ทำ (<%= orders.filter(o => o.status === 'preparing').length %>)</div>
+                    <div class="filter-tab" data-filter="completed">สิ้น (<%= orders.filter(o => o.status === 'completed').length %>)</div>
+                    <div class="filter-tab" data-filter="all">ทั้งหมด</div>
                 </div>
-                <div class="card-body">
-                    <% const pendingOrders = orders.filter(order => order.status === 'pending') %>
-                    <% pendingOrders.forEach(order => { %>
-                        <div class="order-card mb-3 p-3 border rounded">
-                            <div class="d-flex justify-content-between">
-                                <h6>ออเดอร์ #<%= order.orderNumber %></h6>
-                                <span class="badge bg-warning">รอดำเนินการ</span>
-                            </div>
-                            <p class="mb-1">โต๊ะ: <%= order.tableNumber %></p>
-                            <p class="mb-1">ลูกค้า: <%= order.customerName %></p>
-                            <hr>
-                            <% order.items.forEach(item => { %>
-                                <div class="d-flex justify-content-between">
-                                    <span><%= item.menu.name %> x <%= item.quantity %></span>
-                                    <span>฿<%= item.price * item.quantity %></span>
-                                </div>
-                            <% }) %>
-                            <hr>
-                            <div class="d-flex justify-content-between">
-                                <strong>รวม</strong>
-                                <strong>฿<%= order.totalAmount %></strong>
-                            </div>
-                            <div class="mt-2">
-                                <button class="btn btn-sm btn-success w-100 update-status" 
-                                        data-id="<%= order._id %>" 
-                                        data-status="preparing">
-                                    เริ่มทำ
-                                </button>
-                            </div>
+            </div>
+            <div class="list-panel-body" id="order-list">
+                <% orders.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(order => { 
+                    let badgeClass = 'bg-warning';
+                    let statusText = 'รอดำเนินการ';
+                    if (order.status === 'preparing') { badgeClass = 'bg-info'; statusText = 'กำลังทำ'; }
+                    else if (order.status === 'completed') { badgeClass = 'bg-success'; statusText = 'เสร็จสิ้น'; }
+                %>
+                    <div class="list-item order-list-item" data-id="<%= order._id %>" data-status="<%= order.status %>" onclick="selectOrder('<%= order._id %>')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="text-dark">#<%= order.orderNumber %></strong>
+                            <span class="badge <%= badgeClass %>"><%= statusText %></span>
                         </div>
-                    <% }) %>
-                </div>
+                        <div class="text-muted small">
+                            โต๊ะ <%= order.tableNumber %> • <%= order.customerName || 'ไม่ระบุชื่อ' %>
+                        </div>
+                    </div>
+                <% }) %>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title mb-0">กำลังทำ</h5>
+        <!-- Right Detail Panel -->
+        <div class="detail-panel">
+            <div id="detail-empty" class="detail-empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                <h4>ยังไม่ได้เลือกออเดอร์</h4>
+                <p>คลิกที่ออเดอร์ในรายการด้านซ้ายเพื่อดูรายละเอียด</p>
+            </div>
+            
+            <div id="detail-content" class="d-none h-100 flex-column">
+                <div class="detail-panel-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 text-dark" id="detail-title">ออเดอร์ #</h4>
+                        <p class="text-muted small mb-0" id="detail-meta">โต๊ะ -</p>
+                    </div>
+                    <span id="detail-status-badge" class="badge">สถานะ</span>
                 </div>
-                <div class="card-body">
-                    <% const preparingOrders = orders.filter(order => order.status === 'preparing') %>
-                    <% preparingOrders.forEach(order => { %>
-                        <div class="order-card mb-3 p-3 border rounded">
-                            <div class="d-flex justify-content-between">
-                                <h6>ออเดอร์ #<%= order.orderNumber %></h6>
-                                <span class="badge bg-info">กำลังทำ</span>
-                            </div>
-                            <p class="mb-1">โต๊ะ: <%= order.tableNumber %></p>
-                            <p class="mb-1">ลูกค้า: <%= order.customerName %></p>
-                            <hr>
-                            <% order.items.forEach(item => { %>
-                                <div class="d-flex justify-content-between">
-                                    <span><%= item.menu.name %> x <%= item.quantity %></span>
-                                    <span>฿<%= item.price * item.quantity %></span>
-                                </div>
-                            <% }) %>
-                            <hr>
-                            <div class="d-flex justify-content-between">
-                                <strong>รวม</strong>
-                                <strong>฿<%= order.totalAmount %></strong>
-                            </div>
-                            <div class="mt-2">
-                                <button class="btn btn-sm btn-success w-100 update-status" 
-                                        data-id="<%= order._id %>" 
-                                        data-status="completed">
-                                    เสร็จสิ้น
-                                </button>
-                            </div>
+                
+                <div class="detail-panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-striped align-middle">
+                            <tbody id="detail-items">
+                                <!-- Items injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <h5 class="mb-0 text-dark">รวมทั้งสิ้น</h5>
+                        <h4 class="text-primary mb-0" id="detail-total">฿0</h4>
+                    </div>
+                </div>
+                
+                <div class="detail-panel-footer" id="detail-actions">
+                    <!-- Actions injected via JS -->
+                </div>
+            </div>
+            
+            <!-- Payment Slide Drawer Overlay -->
+            <div class="payment-drawer-overlay" id="payment-drawer-overlay" onclick="closePaymentDrawer()"></div>
+            
+            <!-- Payment Slide Drawer -->
+            <div class="payment-drawer" id="payment-drawer">
+                <div class="payment-drawer-header">
+                    <h5 class="mb-0 text-dark d-flex align-items-center gap-2">
+                        <span class="fs-4">💳</span> ชำระเงิน
+                    </h5>
+                    <button type="button" class="btn-close" aria-label="Close" onclick="closePaymentDrawer()"></button>
+                </div>
+                
+                <div class="payment-drawer-body">
+                    <h6 class="mb-3 text-muted">วิธีชำระเงิน</h6>
+                    <div class="payment-method-selector" id="payment-methods">
+                        <div class="payment-method-card active" data-method="cash">
+                            <div class="fs-4 mb-1">💵</div>
+                            <div class="small">เงินสด</div>
                         </div>
-                    <% }) %>
+                        <div class="payment-method-card" data-method="qr">
+                            <div class="fs-4 mb-1">📱</div>
+                            <div class="small">QR Code</div>
+                        </div>
+                        <div class="payment-method-card" data-method="card">
+                            <div class="fs-4 mb-1">💳</div>
+                            <div class="small">บัตร</div>
+                        </div>
+                    </div>
+
+                    <div id="payment-cash-details">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">รับเงินมา (บาท)</label>
+                            <input type="number" class="form-control form-control-lg text-end fs-4 text-primary" id="payment-received" placeholder="0.00">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded border">
+                            <span class="text-muted fw-medium">เงินทอน</span>
+                            <strong class="text-success fs-4" id="payment-change">฿0</strong>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    
+                    <div class="form-check form-switch mb-3 d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0" type="checkbox" role="switch" id="print-receipt-toggle" checked style="width: 2.5rem; height: 1.25rem; cursor: pointer;">
+                        <label class="form-check-label text-dark fw-medium" for="print-receipt-toggle" style="cursor: pointer;">พิมพ์ใบเสร็จทันที</label>
+                    </div>
+                </div>
+
+                <div class="payment-drawer-footer">
+                    <div class="d-flex justify-content-between mb-3 align-items-end">
+                        <span class="text-muted">ยอดที่ต้องชำระ</span>
+                        <strong class="text-primary" style="font-size: 2rem; line-height: 1;" id="payment-total-amount">฿0</strong>
+                    </div>
+                    <button class="btn btn-primary w-100 py-3 fs-5 fw-bold" id="confirm-payment-btn" onclick="confirmPayment()">
+                        ยืนยันชำระเงิน
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">เสร็จสิ้น</h5>
+    <!-- Receipt Modal -->
+    <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg" style="background: #fafafa;">
+                <div class="modal-body p-4 text-dark" id="receipt-content" style="font-family: 'Courier New', Courier, monospace;">
+                    <!-- Receipt content injected here -->
                 </div>
-                <div class="card-body">
-                    <% const completedOrders = orders.filter(order => order.status === 'completed') %>
-                    <% completedOrders.forEach(order => { %>
-                        <div class="order-card mb-3 p-3 border rounded">
-                            <div class="d-flex justify-content-between">
-                                <h6>ออเดอร์ #<%= order.orderNumber %></h6>
-                                <span class="badge bg-success">เสร็จสิ้น</span>
-                            </div>
-                            <p class="mb-1">โต๊ะ: <%= order.tableNumber %></p>
-                            <p class="mb-1">ลูกค้า: <%= order.customerName %></p>
-                            <hr>
-                            <% order.items.forEach(item => { %>
-                                <div class="d-flex justify-content-between">
-                                    <span><%= item.menu.name %> x <%= item.quantity %></span>
-                                    <span>฿<%= item.price * item.quantity %></span>
-                                </div>
-                            <% }) %>
-                            <hr>
-                            <div class="d-flex justify-content-between">
-                                <strong>รวม</strong>
-                                <strong>฿<%= order.totalAmount %></strong>
-                            </div>
-                        </div>
-                    <% }) %>
+                <div class="modal-footer p-2 border-top-0 d-flex justify-content-between bg-light rounded-bottom">
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" onclick="closeReceiptAndReload()">ปิดหน้านี้</button>
+                    <button type="button" class="btn btn-primary btn-sm px-3" onclick="printReceiptContent()">🖨️ พิมพ์ใบเสร็จ</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Create Order Modal -->
-    <div class="modal fade" id="createOrderModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade order-modal" id="createOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">สร้างออเดอร์ใหม่</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div>
+                        <h5 class="modal-title">สร้างออเดอร์ใหม่</h5>
+                        <p class="text-muted small mb-0">เลือกเมนูตามหมวด แล้วปรับจำนวน พร้อมภาพตัวอย่าง</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
                 </div>
-                <form action="/orders" method="POST">
+                <form action="/orders" method="POST" class="order-form">
                     <div class="modal-body">
-                        <!-- Customer Info -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">ชื่อลูกค้า</label>
-                                <input type="text" class="form-control" name="customerName" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">เลขโต๊ะ</label>
-                                <input type="text" class="form-control" name="tableNumber" required>
-                            </div>
-                        </div>
-                        
-                        <!-- Menu Selection -->
-                        <div class="menu-items-container">
-                            <h6 class="mb-3">รายการอาหาร</h6>
-                            <% if (locals.menus && menus.length > 0) { %>
-                                <% menus.forEach((menu, index) => { %>
-                                    <div class="row mb-2 align-items-center">
-                                        <div class="col-6">
-                                            <label class="form-label"><%= menu.name %> (฿<%= menu.price %>)</label>
+                        <div class="row g-4">
+                            <div class="col-lg-4 order-lg-2">
+                                <div class="order-sidebar rounded-3 p-4 bg-white shadow-sm" style="position: sticky; top: 1rem;">
+                                    <h6 class="mb-3">ภาพรวมออเดอร์</h6>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">โต๊ะ</span>
+                                            <strong class="order-summary-table">-</strong>
                                         </div>
-                                        <div class="col-6">
-                                            <input type="hidden" name="menuItems[<%= index %>][menuId]" value="<%= menu._id %>">
-                                            <input type="number" 
-                                                   class="form-control" 
-                                                   name="menuItems[<%= index %>][quantity]" 
-                                                   value="0" 
-                                                   min="0">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">ประเภท</span>
+                                            <strong class="order-summary-type">นั่งทานในร้าน</strong>
                                         </div>
                                     </div>
-                                <% }) %>
-                            <% } else { %>
-                                <p>ไม่พบรายการเมนู</p>
-                            <% } %>
+                                    <div class="border-top pt-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">จำนวนรายการ</span>
+                                            <strong class="order-summary-count">0</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted">รวมประมาณ</span>
+                                            <strong class="order-summary-total">฿0</strong>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mt-3 mb-0">รายการต้องมีจำนวนอย่างน้อย 1 ชิ้นเพื่อบันทึกออเดอร์</p>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-8 order-lg-1">
+                                <div class="order-meta rounded-3 p-4 bg-white shadow-sm mb-4">
+                                    <div class="row gy-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="customerName">ชื่อลูกค้า</label>
+                                            <input type="text" id="customerName" class="form-control" name="customerName" placeholder="กรอกชื่อผู้สั่งซื้อ" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="tableNumber">โต๊ะ</label>
+                                            <input type="text" id="tableNumber" class="form-control" name="tableNumber" placeholder="เช่น 22" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label d-block mb-2">ประเภทการสั่ง</label>
+                                            <div class="order-destination d-flex flex-wrap gap-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="orderType" id="orderTypeDineIn" value="dine-in" checked>
+                                                    <label class="form-check-label" for="orderTypeDineIn">นั่งทานในร้าน</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="orderType" id="orderTypeTakeAway" value="take-away">
+                                                    <label class="form-check-label" for="orderTypeTakeAway">กลับบ้าน</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="orderType" id="orderTypeRider" value="rider">
+                                                    <label class="form-check-label" for="orderTypeRider">Rider / ส่งถึงบ้าน</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="menu-selection rounded-3 p-4 bg-white shadow-sm">
+                                    <div class="mb-3">
+                                        <h6 class="mb-1">เลือกรายการอาหาร</h6>
+                                        <p class="text-muted small mb-0">กรองตามหมวด แล้วเลือกเมนู</p>
+                                    </div>
+
+                                    <div class="d-flex flex-column flex-md-row gap-2 mb-3">
+                                        <div class="menu-category-filters d-flex flex-wrap gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary category-filter active" data-category="all">ทั้งหมด</button>
+                                            <% const categories = [...new Set(menus.map(menu => String(menu.category || '').trim()))]; %>
+                                            <% categories.forEach(category => { %>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary category-filter" data-category="<%= category %>"><%= category %></button>
+                                            <% }); %>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <input type="search" class="form-control form-control-sm menu-search-input" placeholder="ค้นหารายการ หรือ ราคา" aria-label="ค้นหารายการเมนู">
+                                        </div>
+                                    </div>
+
+                                    <% if (locals.menus && menus.length > 0) { %>
+                                        <div class="menu-items-list">
+                                            <% menus.forEach((menu, index) => { %>
+                                                <div class="menu-item-row d-flex align-items-center rounded-3 p-3 mb-2" data-category="<%= String(menu.category || '').trim() %>" data-price="<%= menu.price %>" data-name="<%= menu.name.toLowerCase() %>">
+                                                    <div class="menu-item-image me-3 flex-shrink-0">
+                                                        <% if (menu.image) { %>
+                                                            <img src="<%= menu.image %>" alt="<%= menu.name %>" loading="lazy">
+                                                        <% } else { %>
+                                                            <div class="menu-item-placeholder"><span>ไม่มีรูป</span></div>
+                                                        <% } %>
+                                                    </div>
+                                                    <div class="menu-item-content flex-grow-1">
+                                                        <div class="d-flex justify-content-between align-items-start gap-3">
+                                                            <div>
+                                                                <div class="fw-semibold"><%= menu.name %></div>
+                                                                <div class="text-muted small"><%= menu.category %></div>
+                                                            </div>
+                                                            <div class="text-end">
+                                                                <div class="fw-semibold">฿<%= menu.price %></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between align-items-center pt-3 gap-3 flex-wrap">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <input type="hidden" name="menuItems[<%= index %>][menuId]" value="<%= menu._id %>">
+                                                                <input type="number" class="form-control form-control-sm quantity-input" name="menuItems[<%= index %>][quantity]" value="0" min="0" step="1" aria-label="จำนวน <%= menu.name %>">
+                                                                <div class="text-end item-total">฿0</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <% }) %>
+                                        </div>
+                                    <% } else { %>
+                                        <p class="mb-0">ไม่พบรายการเมนู</p>
+                                    <% } %>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                        <button type="submit" class="btn btn-primary">บันทึก</button>
+
+                    <div class="modal-footer border-0 justify-content-between py-3">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="submit" class="btn btn-primary">บันทึกออเดอร์</button>
                     </div>
                 </form>
             </div>
@@ -179,28 +293,457 @@
 </div>
 
 <script>
+    const createOrderModal = document.getElementById('createOrderModal');
+    const orderSummaryTable = createOrderModal.querySelector('.order-summary-table');
+    const orderSummaryType = createOrderModal.querySelector('.order-summary-type');
+    const orderSummaryCount = createOrderModal.querySelector('.order-summary-count');
+    const orderSummaryTotal = createOrderModal.querySelector('.order-summary-total');
+    const tableNumberInput = createOrderModal.querySelector('#tableNumber');
+    const orderTypeInputs = createOrderModal.querySelectorAll('input[name="orderType"]');
+    const quantityInputs = Array.from(createOrderModal.querySelectorAll('.quantity-input'));
+    const itemTotals = Array.from(createOrderModal.querySelectorAll('.item-total'));
+    const categoryButtons = Array.from(createOrderModal.querySelectorAll('.category-filter'));
+    const menuItemRows = Array.from(createOrderModal.querySelectorAll('.menu-item-row'));
+    const menuSearchInput = createOrderModal.querySelector('.menu-search-input');
+
+    function filterMenuItems(selectedCategory, searchTerm) {
+        const normalizedCategory = selectedCategory.trim().toLowerCase();
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+
+        categoryButtons.forEach(button => {
+            button.classList.toggle('active', button.dataset.category.trim().toLowerCase() === normalizedCategory);
+        });
+
+        menuItemRows.forEach(row => {
+            const rowCategory = row.dataset.category.trim().toLowerCase();
+            const rowName = row.dataset.name || '';
+            const rowPrice = String(row.dataset.price || '').trim().toLowerCase();
+            const categoryVisible = normalizedCategory === 'all' || rowCategory === normalizedCategory;
+            const searchVisible = !normalizedSearch || rowName.includes(normalizedSearch) || rowCategory.includes(normalizedSearch) || rowPrice.includes(normalizedSearch);
+            const shouldShow = categoryVisible && searchVisible;
+            row.classList.toggle('d-none', !shouldShow);
+            row.classList.toggle('d-flex', shouldShow);
+        });
+    }
+
+    function applyCategoryFilter(category) {
+        const currentSearch = menuSearchInput.value || '';
+        filterMenuItems(category, currentSearch);
+    }
+
+    function refreshOrderModalSummary() {
+        let totalQuantity = 0;
+        let totalAmount = 0;
+
+        quantityInputs.forEach((input, index) => {
+            const quantity = Number(input.value) || 0;
+            const row = input.closest('[data-price]');
+            const price = Number(row.dataset.price) || 0;
+            const lineTotal = quantity * price;
+
+            itemTotals[index].textContent = `฿${lineTotal.toLocaleString('en-US')}`;
+            totalQuantity += quantity;
+            totalAmount += lineTotal;
+
+            input.closest('.menu-item-row')?.classList.toggle('menu-item-selected', quantity > 0);
+        });
+
+        const selectedOption = Array.from(orderTypeInputs).find(input => input.checked);
+
+        orderSummaryTable.textContent = tableNumberInput.value.trim() || '-';
+        orderSummaryType.textContent = selectedOption ? selectedOption.nextElementSibling.textContent : '-';
+        orderSummaryCount.textContent = totalQuantity;
+        orderSummaryTotal.textContent = `฿${totalAmount.toLocaleString('en-US')}`;
+    }
+
+    categoryButtons.forEach(button => {
+        button.addEventListener('click', () => applyCategoryFilter(button.dataset.category));
+    });
+
+    menuSearchInput.addEventListener('input', () => {
+        const activeCategoryButton = categoryButtons.find(button => button.classList.contains('active')) || categoryButtons[0];
+        filterMenuItems(activeCategoryButton.dataset.category, menuSearchInput.value);
+    });
+
+    quantityInputs.forEach(input => input.addEventListener('input', refreshOrderModalSummary));
+    tableNumberInput.addEventListener('input', refreshOrderModalSummary);
+    orderTypeInputs.forEach(input => input.addEventListener('change', refreshOrderModalSummary));
+    createOrderModal.addEventListener('shown.bs.modal', () => {
+        menuSearchInput.value = '';
+        applyCategoryFilter('all');
+        refreshOrderModalSummary();
+    });
+
+    createOrderModal.addEventListener('hidden.bs.modal', () => {
+        quantityInputs.forEach(input => input.value = 0);
+        menuSearchInput.value = '';
+        tableNumberInput.value = '';
+        orderTypeInputs[0].checked = true;
+        applyCategoryFilter('all');
+        refreshOrderModalSummary();
+    });
+
 // Update order status
-document.querySelectorAll('.update-status').forEach(button => {
-    button.addEventListener('click', async (e) => {
-        const id = e.target.dataset.id;
-        const status = e.target.dataset.status;
-        try {
-            const response = await fetch(`/orders/${id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status })
-            });
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                throw new Error('Failed to update status');
+function attachStatusListeners() {
+    document.querySelectorAll('.update-status').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            const status = e.target.dataset.status;
+            try {
+                const response = await fetch(`/orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    throw new Error('Failed to update status');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+        });
+    });
+}
+attachStatusListeners();
+
+// Split-Panel Logic for Orders
+const ordersData = <%- JSON.stringify(orders || []).replace(/</g, '\\u003c') %>;
+const filterTabs = document.querySelectorAll('#order-filters .filter-tab');
+const listItems = document.querySelectorAll('.order-list-item');
+const emptyState = document.getElementById('detail-empty');
+const contentState = document.getElementById('detail-content');
+
+// Formatting helpers
+function formatTime(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Select an order to view detail
+window.selectOrder = function(orderId) {
+    // Update active class on list
+    listItems.forEach(item => item.classList.remove('active'));
+    const activeItem = document.querySelector(`.order-list-item[data-id="${orderId}"]`);
+    if (activeItem) activeItem.classList.add('active');
+
+    const order = ordersData.find(o => o._id === orderId);
+    if (!order) return;
+
+    // Hide empty state, show content
+    emptyState.classList.add('d-none');
+    contentState.classList.remove('d-none');
+    contentState.classList.add('d-flex');
+
+    // Populate headers
+    document.getElementById('detail-title').textContent = `ออเดอร์ #${order.orderNumber}`;
+    document.getElementById('detail-meta').innerHTML = `โต๊ะ <strong>${order.tableNumber}</strong> • ${order.customerName || 'ไม่ระบุชื่อ'} • ${formatTime(order.createdAt)}`;
+    
+    // Status badge
+    const badge = document.getElementById('detail-status-badge');
+    if (order.status === 'pending') { badge.className = 'badge bg-warning'; badge.textContent = 'รอดำเนินการ'; }
+    else if (order.status === 'preparing') { badge.className = 'badge bg-info'; badge.textContent = 'กำลังทำ'; }
+    else if (order.status === 'completed') { badge.className = 'badge bg-success'; badge.textContent = 'เสร็จสิ้น'; }
+    else { badge.className = 'badge bg-secondary'; badge.textContent = order.status; }
+
+    // Populate items
+    const itemsContainer = document.getElementById('detail-items');
+    itemsContainer.innerHTML = '';
+    order.items.forEach(item => {
+        const name = item.menu ? item.menu.name : 'Unknown Item';
+        itemsContainer.innerHTML += `
+            <tr>
+                <td class="fw-medium">${name}</td>
+                <td class="text-center text-muted">x${item.quantity}</td>
+                <td class="text-end">฿${(item.price * item.quantity).toLocaleString()}</td>
+            </tr>
+        `;
+    });
+
+    // Populate total
+    document.getElementById('detail-total').textContent = `฿${order.totalAmount.toLocaleString()}`;
+
+    // Populate actions
+    const actionsContainer = document.getElementById('detail-actions');
+    actionsContainer.innerHTML = '';
+    if (order.status === 'pending') {
+        actionsContainer.innerHTML = `
+            <button class="btn btn-primary w-100 update-status" data-id="${order._id}" data-status="preparing">
+                เริ่มทำ (Start Preparing)
+            </button>
+        `;
+    } else if (order.status === 'preparing') {
+        actionsContainer.innerHTML = `
+            <button class="btn btn-success w-100 update-status" data-id="${order._id}" data-status="completed">
+                ✓ เสร็จสิ้น (Mark as Completed)
+            </button>
+        `;
+    } else if (order.status === 'completed') {
+        if (!order.paidAt) {
+            actionsContainer.innerHTML = `
+                <button class="btn btn-outline-primary w-100" onclick="openPaymentDrawer('${order._id}')">
+                    💳 ชำระเงิน (Payment)
+                </button>
+            `;
+        } else {
+            actionsContainer.innerHTML = `
+                <div class="bg-light text-success text-center p-2 rounded border border-success mb-2">
+                    ✓ ชำระเงินแล้ว (${order.paymentMethod})
+                </div>
+                <button class="btn btn-outline-secondary w-100" onclick="fetchAndShowReceipt('${order._id}')">
+                    📄 ดูใบเสร็จรับเงิน
+                </button>
+            `;
+        }
+    }
+    // Reattach listeners to new buttons
+    attachStatusListeners();
+};
+
+// Filtering logic
+filterTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        // Update tab styling
+        filterTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const filterStatus = tab.dataset.filter;
+        let visibleCount = 0;
+        
+        listItems.forEach(item => {
+            const itemStatus = item.dataset.status;
+            if (filterStatus === 'all' || itemStatus === filterStatus) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Hide detail panel on filter change to reset view
+        emptyState.classList.remove('d-none');
+        contentState.classList.add('d-none');
+        contentState.classList.remove('d-flex');
+        listItems.forEach(item => item.classList.remove('active'));
+    });
+});
+
+// Initial trigger for default 'pending' tab
+document.querySelector('.filter-tab[data-filter="pending"]').click();
+
+// ─── Payment Drawer Logic ────────────────────────────────────────────────
+let currentPaymentOrderId = null;
+let currentPaymentTotal = 0;
+let currentPaymentMethod = 'cash';
+
+window.openPaymentDrawer = function(orderId) {
+    const order = ordersData.find(o => o._id === orderId);
+    if (!order) return;
+    
+    currentPaymentOrderId = orderId;
+    currentPaymentTotal = order.totalAmount;
+    
+    document.getElementById('payment-total-amount').textContent = `฿${order.totalAmount.toLocaleString()}`;
+    document.getElementById('payment-received').value = '';
+    document.getElementById('payment-change').textContent = '฿0';
+    document.getElementById('payment-change').className = 'text-success fs-5';
+    
+    // Default to cash
+    document.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('active'));
+    document.querySelector('.payment-method-card[data-method="cash"]').classList.add('active');
+    currentPaymentMethod = 'cash';
+    document.getElementById('payment-cash-details').style.display = 'block';
+
+    document.getElementById('payment-drawer-overlay').classList.add('open');
+    document.getElementById('payment-drawer').classList.add('open');
+};
+
+window.closePaymentDrawer = function() {
+    document.getElementById('payment-drawer-overlay').classList.remove('open');
+    document.getElementById('payment-drawer').classList.remove('open');
+    currentPaymentOrderId = null;
+};
+
+document.querySelectorAll('.payment-method-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.payment-method-card').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        currentPaymentMethod = this.dataset.method;
+        
+        const cashDetails = document.getElementById('payment-cash-details');
+        if (currentPaymentMethod === 'cash') {
+            cashDetails.style.display = 'block';
+        } else {
+            cashDetails.style.display = 'none';
         }
     });
 });
-</script> 
+
+document.getElementById('payment-received').addEventListener('input', function() {
+    const received = parseFloat(this.value) || 0;
+    const change = received - currentPaymentTotal;
+    const changeEl = document.getElementById('payment-change');
+    if (change >= 0) {
+        changeEl.textContent = `฿${change.toLocaleString()}`;
+        changeEl.className = 'text-success fs-5 fw-bold';
+    } else {
+        changeEl.textContent = `ยอดไม่พอ (ขาด ฿${Math.abs(change).toLocaleString()})`;
+        changeEl.className = 'text-danger fs-5';
+    }
+});
+
+window.confirmPayment = async function() {
+    if (!currentPaymentOrderId) return;
+    
+    const receivedInput = parseFloat(document.getElementById('payment-received').value) || 0;
+    
+    if (currentPaymentMethod === 'cash' && receivedInput < currentPaymentTotal) {
+        alert('จำนวนเงินรับมาไม่เพียงพอ!');
+        return;
+    }
+    
+    const printReceipt = document.getElementById('print-receipt-toggle').checked;
+    const btn = document.getElementById('confirm-payment-btn');
+    
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังประมวลผล...';
+        
+        const res = await fetch(`/payment/${currentPaymentOrderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                paymentMethod: currentPaymentMethod,
+                receivedAmount: currentPaymentMethod === 'cash' ? receivedInput : currentPaymentTotal
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            closePaymentDrawer();
+            if (printReceipt) {
+                showReceiptModal(data.receipt, true);
+            } else {
+                alert('ชำระเงินสำเร็จ!');
+                window.location.reload();
+            }
+        } else {
+            alert(data.message || 'เกิดข้อผิดพลาด');
+            btn.disabled = false;
+            btn.innerHTML = 'ยืนยันชำระเงิน';
+        }
+    } catch (err) {
+        console.error(err);
+        alert('ระบบเกิดข้อผิดพลาด');
+        btn.disabled = false;
+        btn.innerHTML = 'ยืนยันชำระเงิน';
+    }
+};
+
+window.fetchAndShowReceipt = async function(orderId) {
+    try {
+        const res = await fetch(`/payment/${orderId}/receipt`);
+        const data = await res.json();
+        if (res.ok) {
+            showReceiptModal(data.receipt, false);
+        } else {
+            alert(data.message || 'ไม่สามารถดึงใบเสร็จได้');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('เกิดข้อผิดพลาด');
+    }
+};
+
+window.showReceiptModal = function(receipt, autoPrint = false) {
+    let itemsHtml = receipt.items.map(item => `
+        <div class="d-flex justify-content-between small">
+            <span>${item.name} x${item.quantity}</span>
+            <span>฿${item.subtotal.toLocaleString()}</span>
+        </div>
+    `).join('');
+
+    let paymentDetails = `
+        <div class="d-flex justify-content-between small">
+            <span>วิธีชำระ:</span>
+            <span>${receipt.paymentMethodLabel}</span>
+        </div>
+    `;
+
+    if (receipt.paymentMethod === 'cash') {
+        paymentDetails += `
+        <div class="d-flex justify-content-between small">
+            <span>รับเงินมา:</span>
+            <span>฿${receipt.receivedAmount.toLocaleString()}</span>
+        </div>
+        <div class="d-flex justify-content-between small">
+            <span>เงินทอน:</span>
+            <span>฿${receipt.change.toLocaleString()}</span>
+        </div>`;
+    }
+
+    const html = `
+        <div class="text-center mb-3">
+            <h5 class="mb-0 fw-bold">NOSTALGIC CAFE</h5>
+            <small class="text-muted">ใบเสร็จรับเงิน</small>
+        </div>
+        <div class="small mb-3 pb-2" style="border-bottom: 1px dashed #ccc;">
+            <div>ออเดอร์: ${receipt.orderNumber}</div>
+            <div>โต๊ะ: ${receipt.tableNumber}</div>
+            <div>ลูกค้า: ${receipt.customerName}</div>
+            <div>วันที่: ${receipt.paidAtFormatted}</div>
+        </div>
+        <div class="mb-3 pb-2" style="border-bottom: 1px dashed #ccc;">
+            ${itemsHtml}
+        </div>
+        <div class="d-flex justify-content-between fw-bold mb-2">
+            <span>รวมทั้งสิ้น</span>
+            <span>฿${receipt.totalAmount.toLocaleString()}</span>
+        </div>
+        <div class="pb-2 mb-2" style="border-bottom: 1px dashed #ccc;">
+            ${paymentDetails}
+        </div>
+        <div class="text-center small text-muted mt-3">
+            ขอบคุณที่ใช้บริการ
+        </div>
+    `;
+
+    document.getElementById('receipt-content').innerHTML = html;
+    const modalEl = document.getElementById('receiptModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    if (autoPrint) {
+        // Wait a bit for modal to finish animating before printing
+        setTimeout(() => {
+            window.printReceiptContent();
+        }, 500);
+    }
+};
+
+window.closeReceiptAndReload = function() {
+    const modalEl = document.getElementById('receiptModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+    window.location.reload();
+};
+
+window.printReceiptContent = function() {
+    const printContent = document.getElementById('receipt-content').innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+        <div style="max-width: 300px; margin: 0 auto; padding: 20px; font-family: 'Courier New', Courier, monospace;">
+            ${printContent}
+        </div>
+    `;
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload();
+};
+
+</script>

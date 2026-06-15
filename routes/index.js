@@ -47,7 +47,7 @@ router.get('/dashboard', isAuthenticated, async (req, res) => {
         const totalMenus = await Menu.countDocuments();
 
         // จำนวนออเดอร์ที่รอดำเนินการ
-        const pendingOrders = await Order.countDocuments({ status: 'pending' });
+        const pendingOrders = await Order.countDocuments({ status: { $in: ['pending', 'preparing'] } });
 
         // ออเดอร์ล่าสุด 10 รายการ
         const recentOrders = await Order.find()
@@ -55,14 +55,68 @@ router.get('/dashboard', isAuthenticated, async (req, res) => {
             .limit(10)
             .populate('items.menu');
 
+        // ออเดอร์ทั้งหมดวันนี้
+        const todayOrdersAll = await Order.find({
+            createdAt: {
+                $gte: today,
+                $lt: tomorrow
+            }
+        }).populate('items.menu');
+
+        const hourlyMap = {};
+        for (let hour = 8; hour <= 20; hour++) {
+            hourlyMap[hour] = 0;
+        }
+        todayOrdersAll.forEach(order => {
+            const hour = order.createdAt.getHours();
+            if (hourlyMap[hour] !== undefined) {
+                hourlyMap[hour] += 1;
+            }
+        });
+
+        const hourlyOrders = Object.entries(hourlyMap).map(([hour, count]) => ({
+            hour: `${hour}:00`,
+            count
+        }));
+
+        const menuMap = {};
+        todayOrdersAll.forEach(order => {
+            order.items.forEach(item => {
+                const name = item.menu?.name || 'เมนูทั่วไป';
+                if (!menuMap[name]) {
+                    menuMap[name] = { quantity: 0, revenue: 0 };
+                }
+                menuMap[name].quantity += item.quantity;
+                menuMap[name].revenue += item.price * item.quantity;
+            });
+        });
+
+        const topMenus = Object.entries(menuMap)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        const popularMenu = topMenus[0] || null;
+
+        const pendingOrdersList = await Order.find({
+            status: { $in: ['pending', 'preparing'] }
+        })
+            .sort({ createdAt: 1 })
+            .limit(5)
+            .populate('items.menu');
+
         res.render('pages/dashboard', {
             title: 'แดชบอร์ด',
             layout: 'layouts/main',
             todaySales,
-            todayOrders: todayOrderCount,
+            todayOrderCount,
             totalMenus,
             pendingOrders,
-            recentOrders
+            recentOrders,
+            hourlyOrders,
+            topMenus,
+            popularMenu,
+            pendingOrdersList
         });
     } catch (error) {
         console.error('Dashboard Error:', error);
